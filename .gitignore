@@ -348,3 +348,7 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+
+# don't accidentally commit credentials
+creds.json
+crossplane-azure-provider-key.json
