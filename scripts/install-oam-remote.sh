@@ -31,6 +31,11 @@ fi
 sudo apt-get update
 sudo apt-get install -y virtualbox
 
+# Install azoam
+curl -L -o azoam "https://github.com/Azure/azure-oam-solution/blob/master/tools/linux_amd64/azoam?raw=true"
+chmod +x ./azoam
+sudo mv ./azoam /usr/local/bin/azoam
+
 # Install kubectl - https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-on-linux
 curl -LO "https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl"
 chmod +x ./kubectl

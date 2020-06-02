@@ -1,5 +1,7 @@
 ## Installing OAM in remote mode
 
+*Note: Using the ARM template to create an Crossplane installation is far more efficient. However if you're working on the project, you may need to test changes to the installation, and using the script directly will give you better visibility.*
+
 This script can be used on a Linux VM to install minikube, Crossplane, and the Azure provider to manage a remote AKS cluster.
 
 This has been tested using the UbuntuLTS image - but the script should work on any `apt` based system.
@@ -10,7 +12,7 @@ This has been tested using the UbuntuLTS image - but the script should work on a
 
 Crossplane needs a Service Principal so that it can manage resources for you.
 
-Follow the instructions [here](https://crossplane.io/docs/v0.11/getting-started/install-configure.html) for `Select Provider -> Azure -> Get Azure Principal Keyfile`. You do not install or configurat anything other than the service principal now, just make sure to create `creds.json` and run all of the listed commands to grant permissions. 
+Follow the instructions [here](https://crossplane.io/docs/v0.11/getting-started/install-configure.html) for `Select Provider -> Azure -> Get Azure Principal Keyfile`. You do not install or configure anything other than the service principal now, just make sure to create `creds.json` and run all of the listed commands to grant permissions. 
 
 #### Create Resource Group
 
