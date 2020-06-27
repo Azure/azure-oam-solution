@@ -1,4 +1,4 @@
-# Azure OAM Solution
+# Azure OAM Deployment
 
 This reposititory contains instructions and scripts for easily getting an OAM-enabled Kubernetes control plane running on Azure using Crossplane.
 
@@ -157,7 +157,13 @@ minikube start
 
 Now you can use `kubectl` to deploy some workloads using OAM.
 
-### Cleaning Up
+## Complete the tutorial
+
+Once you can log into the control plane VM and access the AKS cluster you're ready to go!
+
+Find the tutorial [here](tutorial/README.md).
+
+## Cleaning Up
 
 All of the resources created by Crossplane, your control plane VM, and AKS cluster are all part of the same resource group. To delete all of the resources run the following command.
 

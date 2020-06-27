@@ -1,0 +1,67 @@
+input string dbuser
+input string dbname
+input securestring dbpassword
+input string dbhostname
+input string dbport
+
+resource oam 'Component@core.oam.dev/v1alpha2' _ {
+  metadata: {
+    name: 'data-api'
+  }
+  spec : {
+    workload: {
+      apiVersion: 'core.oam.dev/v1alpha2'
+      kind: 'ContainerizedWorkload'
+      metadata: {
+        name: 'data-api'
+      }
+      spec: {
+        osType: 'linux'
+        arch: 'amd64'
+        containers: [
+          {
+            name: 'data-api'
+            image: 'artursouza/rudr-data-api:0.50'
+            env: [
+              {
+                name: 'DATABASE_USER'
+                value: dbuser
+              }
+              {
+                name: 'DATABASE_PASSWORD'
+                value: dbpassword
+              }
+              {
+                name: 'DATABASE_HOSTNAME'
+                value: dbhostname
+              }
+              {
+                name: 'DATABASE_NAME'
+                value: dbname
+              }
+              {
+                name: 'DATABASE_PORT'
+                value: dbport
+              }
+              {
+                name: 'DATABASE_DRIVER'
+                value: 'postgres'
+              }
+              {
+                name: 'DATABASE_OPTIONS'
+                value: ''
+              }
+            ]
+            ports: [
+              {
+                name: 'http'
+                containerPort: 3009
+                protocol: 'TCP'
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

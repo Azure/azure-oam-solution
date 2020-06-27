@@ -1,0 +1,12 @@
+resource oam 'ApplicationConfiguration@core.oam.dev/v1alpha2' _ {
+  metadata: {
+    name: 'hello-world'
+  }
+  spec : {
+    components: [
+      {
+        componentName: 'hello-world'
+      }
+    ]
+  }
+}
