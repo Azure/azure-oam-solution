@@ -162,12 +162,7 @@ Now you can use `kubectl` to deploy some workloads using OAM.
 All of the resources created by Crossplane, your control plane VM, and AKS cluster are all part of the same resource group. To delete all of the resources run the following command.
 
 ```sh
-az group delete --name <resource-group> --yes
-```
-
-Example:
-```sh
-az group delete --name oam-tutorial --yes
+az group delete --name  $OAM_TUTORIAL_RESOURCE_GROUP_NAME --yes
 ```
 
 ## Contributing
