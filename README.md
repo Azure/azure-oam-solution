@@ -140,7 +140,7 @@ Now you should have credentials in your Kubernetes configuration for the AKS clu
 
 Extract the VM's *public* IP address:
 ```
-export OAM_TUTORIAL_VM_IP=$(az vm list-ip-addresses -g $OAM_TUTORIAL_RESOURCE_GROUP_NAME | jq -r '.[0].virtualMachine.network.publicIpAddresses[0].ipAddress')
+export OAM_TUTORIAL_VM_IP=$(az vm list-ip-addresses -g $OAM_TUTORIAL_RESOURCE_GROUP_NAME --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" --output tsv)
 ```
 
 The created VM IP address should be part of the command output.
