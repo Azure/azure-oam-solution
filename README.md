@@ -128,7 +128,7 @@ az aks list --resource-group $OAM_TUTORIAL_RESOURCE_GROUP_NAME
 Export the AKS cluster name to a environment variable:
 
 ```sh
-export OAM_TUTORIAL_AKS_CLUSTER_NAME=$(az aks list --resource-group $OAM_TUTORIAL_RESOURCE_GROUP_NAME | jq -r '.[0].name')
+export OAM_TUTORIAL_AKS_CLUSTER_NAME=$(az aks list --resource-group $OAM_TUTORIAL_RESOURCE_GROUP_NAME --query '[].name' -o tsv)
 ```
 
 ```sh
