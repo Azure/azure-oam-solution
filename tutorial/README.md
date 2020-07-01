@@ -215,6 +215,8 @@ If the IP address is still in the pending state wait a few seconds and try again
 
 Now paste the IP address into your browser (your IP address will be different from the one shown here). After a few seconds you should see some basic info about the server.
 
+![screenshot of the hello-world application](hello-world.png)
+
 If this is working then you've successfully completed this step. You can now remove this application and move on the next step.
 
 ```sh
@@ -674,6 +676,7 @@ component.core.oam.dev/weather created
 Next check that the `ApplicationConfiguration` was deployed without errors by running:
 
 ```sh
+# run on the control plane VM
 kubectl describe applicationconfiguration
 ```
 
@@ -688,6 +691,7 @@ You should see a line like the following indicating success:
 Next, switch to your local terminal connected to the AKS cluster - we should be able to see all of the application's pods running:
 
 ```sh
+# run on your local terminal
 kubectl get pods
 ```
 
@@ -703,6 +707,21 @@ weather-6597bdd47f-d8p6h    1/1     Running   0          8m15s
 
 You may see the `data-api` pod in a crash loop. This can happen if the database hasn't completed initialization yet. It may need a few minutes to stabilize.
 
+To try out the application we'll port-forward it to a local port.
+
+```sh
+# run on your local terminal
+kubectl port-forward svc/ui 8080:8080
+```
+
+Then you can open `http://localhost:8080` in your web browser to see the application.
+
+![screenshot of flight tracker](dashboard.png)
+
+You may see data retrieval fail the first time you open the application. Usually refreshing the page a few times will fix this.
+
+### Cleaning up
+
 If you get this far then the application has been successfully deployed. You can use the following command from your control plane VM to remove the application.
 
 ```sh
@@ -712,6 +731,8 @@ whoami
 # substitute the path to where your files are in this comment
 azoam ./flight-tracker/* | kubectl delete -f -
 ```
+
+You can continue by cleaning up the resource group that was created to delete all of the cloud resources. See instructions [here](../README.md#cleaning-up)
 
 ## Troubleshooting
 
