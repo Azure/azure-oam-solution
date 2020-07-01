@@ -10,6 +10,10 @@ This reposititory contains instructions and scripts for easily getting an OAM-en
 
 These instructions use the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest).
 
+#### Install jq
+
+[Install jq](https://stedolan.github.io/jq/download/) to process JSON output.
+
 #### Service Principal
 
 Crossplane needs a Service Principal so that it can manage resources for you.
@@ -20,18 +24,78 @@ You can use the script provided at `scripts/create-service-principal.sh` (requir
 # log in to azure (if not logged in)
 az login
 
-./create-service-principal.sh
+wget -q https://raw.githubusercontent.com/Azure/azure-oam-solution/master/scripts/create-service-principal.sh -O - | /bin/bash
 ```
 
-#### Create Resource Group
+Verify the credential's file is present:
+```sh
+ls creds.json
+```
 
-This walkthrough will provide a resource group to Crossplane, where it will place provisioned resources. 
+#### Resource Group
+
+This walkthrough will provide a resource group to Crossplane, where it will place provisioned resources.
+
+Choose a name for the resource group:
+```sh
+export OAM_TUTORIAL_RESOURCE_GROUP_NAME=<name>
+```
+
+Example:
+```sh
+export OAM_TUTORIAL_RESOURCE_GROUP_NAME=oam-tutorial
+```
+
+If you already have a resource group and don't want to create a new one, run the command *above* and skip the command below.
 
 ```sh
 # log in to azure (if not logged in)
 az login
 
-az group create --name <resource-group> --location <location>
+az group create --name $OAM_TUTORIAL_RESOURCE_GROUP_NAME --location <location>
+```
+
+Example:
+```sh
+az group create --name $OAM_TUTORIAL_RESOURCE_GROUP_NAME --location westus2
+```
+
+#### Generate SSH Key
+
+Check if you have an ssh key:
+
+```sh
+ls ~/.ssh/id_rsa.pub
+```
+
+If file is not present, generate an ssh key:
+
+```sh
+ssh-keygen
+```
+
+Keep all defaults, and the output should be something like:
+```sh
+Generating public/private rsa key pair.
+Enter file in which to save the key (/home/user/.ssh/id_rsa): 
+Enter passphrase (empty for no passphrase): 
+Enter same passphrase again: 
+Your identification has been saved in /home/user/.ssh/id_rsa.
+Your public key has been saved in /home/user/.ssh/id_rsa.pub.
+The key fingerprint is:
+SHA256:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX user@pc
+The key's randomart image is:
++---[RSA 2048]----+
+|    .      ..Xo..|
+|   . . .  . .o.X.|
+|    . . o.  ..+ B|
+|   .   o.o  .+ ..|
+|    ..o.X   X..  |
+|   . %o=      .  |
+|    @.B...     . |
+|   o.=. X. . .  .|
+|    .oo  E. . .. |
++----[SHA256]-----+
 ```
 
 Make a note of the resource group name you choose for reference later.
@@ -43,11 +107,10 @@ Run (or customize) the following command to deploy the OAM control plane.
 **Bash/Zsh**:
 ```sh
 az deployment group create \
-  --template-file template.json \
-  --resource-group <resource-group>  \
+  --template-uri https://raw.githubusercontent.com/Azure/azure-oam-solution/master/template.json \
+  --resource-group $OAM_TUTORIAL_RESOURCE_GROUP_NAME  \
   --parameter "adminPasswordOrKey=$(<~/.ssh/id_rsa.pub)" \
   --parameter "servicePrincipal=$(<creds.json)"
-  --parameter "_artifactsLocation=https://raw.githubusercontent.com/azure/azure-oam-solution/rynowak/add-arm-template"
 ```
 
 The ARM template in this repo is based on the ARM template found [here](https://azure.microsoft.com/en-us/resources/templates/101-vm-simple-linux/). This documentation covers the supported parameters.
@@ -59,22 +122,31 @@ The `adminPasswordOrKey` parameter in this example command uses an existing SSH 
 When the ARM template completes successfully you will have an AKS cluster in the provided resource group.
 
 ```sh
-az aks list --resource-group <resource-group>
+az aks list --resource-group $OAM_TUTORIAL_RESOURCE_GROUP_NAME
 ```
 
-Find the cluster name in the command output
+Export the AKS cluster name to a environment variable:
 
 ```sh
-az aks get-credentials --name <cluster-name> --resource-group <resource-group>
+export OAM_TUTORIAL_AKS_CLUSTER_NAME=$(az aks list --resource-group $OAM_TUTORIAL_RESOURCE_GROUP_NAME --query '[].name' -o tsv)
+```
+
+```sh
+az aks get-credentials --name $OAM_TUTORIAL_AKS_CLUSTER_NAME --resource-group $OAM_TUTORIAL_RESOURCE_GROUP_NAME
 ```
 Now you should have credentials in your Kubernetes configuration for the AKS cluster. Your workloads will be deployed in this Kubernetes cluster.
 
 ### Connect to the control plane VM
 
+Extract the VM's *public* IP address:
+```
+export OAM_TUTORIAL_VM_IP=$(az vm list-ip-addresses -g $OAM_TUTORIAL_RESOURCE_GROUP_NAME --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" --output tsv)
+```
+
 The created VM IP address should be part of the command output.
 
 ```sh
-ssh azureuser@<ip-address>
+ssh azureuser@$OAM_TUTORIAL_VM_IP
 ```
 
 The OAM control plane is running in Minikube on the VM that you just logged into. Minikube will be stopped when you first log in.
@@ -90,7 +162,7 @@ Now you can use `kubectl` to deploy some workloads using OAM.
 All of the resources created by Crossplane, your control plane VM, and AKS cluster are all part of the same resource group. To delete all of the resources run the following command.
 
 ```sh
-az group delete --name <resource-group> --yes
+az group delete --name  $OAM_TUTORIAL_RESOURCE_GROUP_NAME --yes
 ```
 
 ## Contributing
