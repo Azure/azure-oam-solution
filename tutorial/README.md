@@ -11,7 +11,26 @@ The application being deployed is shown in the following diagram:
 
 ## Getting started
 
-Complete the getting started section in the root of this repository. You should be able to connect via `ssh` to the control plane VM as well as via `kubectl` to the AKS cluster.
+Complete the getting started section [here](../README.md#getting-started). 
+
+After completing the getting started section you should have two terminal windows open:
+
+- A terminal connected via `ssh` to a "control plane" Azure VM running minikube
+- A terminal on your local machine where you can use `kubectl` to communicate with an AKS cluster
+
+The control plane VM is where you will perform commands to deploy and manage application using OAM.
+
+The AKS cluster is where the application containers will run, and the actual application will be hosted.
+
+### Clone this repository
+
+Clone this repository locally using whatever technique you prefer. Example:
+
+```sh
+git clone git@github.com/azure/azure-oam-solution.git
+```
+
+This repository contains code you will use during the tutorial as well as a solution you can use to check your work. You might find it convenient to use the `./tutorial/flight-tracker` directory as your working directory for the bulk of the tutorial.
 
 ## Deploying your first application
 
@@ -125,8 +144,9 @@ Using the control plane vm:
 # you should be logged in to the control plane VM as 'azureuser'
 whoami
 
+# this command will print information about the configured kubernetes cluster
 # minikube should be running - use `minikube start` if it is not
-minikube start
+kubectl cluster-info
 
 # deploy the application
 azoam hello-world/* | kubectl apply -f -
@@ -301,11 +321,13 @@ resource oam 'Component@core.oam.dev/v1alpha2' _ {
 
 The `db` `Component` is already defined for you in `./flight-tracker/db.arm`.
 
-Now that's include it in the (currently empty `ApplicationConfiguration`) you created in the previous step. It should look like the following:
+Now lets's include it in the (currently empty `ApplicationConfiguration`) you created in the previous step. It should look like the following:
 
 ```js
 resource oam 'ApplicationConfiguration@core.oam.dev/v1alpha2' _ {
-  // ... metadata omitted
+  metadata: {
+    name: 'flight-tracker'
+  }
   spec : {
     components: [
       {
@@ -322,7 +344,9 @@ Putting it together with some values it should look like this:
 
 ```js
 resource oam 'ApplicationConfiguration@core.oam.dev/v1alpha2' _ {
-  // ... metadata omitted
+  metadata: {
+    name: 'flight-tracker'
+  }
   spec : {
     components: [
       {
@@ -438,7 +462,9 @@ Here's what those definitions might look like (your parameter names might be dif
 
 ```js
 resource oam 'ApplicationConfiguration@core.oam.dev/v1alpha2' _ {
-  // .. metadata omitted
+  metadata: {
+    name: 'flight-tracker'
+  }
   spec : {
     components: [
       {
@@ -498,7 +524,9 @@ variable dbpassword 'mypassword'
 variable dbname 'hackfest'
 
 resource oam 'ApplicationConfiguration@core.oam.dev/v1alpha2' _ {
-  // .. metadata omitted
+  metadata: {
+    name: 'flight-tracker'
+  }
   spec : {
     components: [
       {
@@ -730,95 +758,4 @@ azoam flight-tracker/* | kubectl delete -f -
 
 # after fixing the mistake
 azoam flight-tracker/* | kubectl apply -f -
-
 ```
-
-
-### Application Developer: Authoring and registering components
-
-There is one UI microservice, four API microservices and one Postgres database.
-Each team is responsible for delivering the component schematic for their
-microservice. The Postgres database can either be run in-cluster or be consumed
-as a managed service from a cloud provider. 
-
-1. The **OAM Components** that are applied require the following information
-   about the app from the developers:
-
-    * The workload type, which dictates how the microservice is supposed to run.
-      In this example, all microservices are of type `ContainerizedWorkload`.
-      The Postgres database is of type `PostgreSQLInstance`.
-    * The container image and credentials. Developers are responsible at the
-      very least for authoring the Dockerfiles containing the dependencies in
-      order to build their runnable container. This example also expects an
-      image to be pushed to a registry although this can be handled by a
-      continuous integration system.
-    * Container ports that expose any ports that servers are listening to.
-    * Parameters that can be overridden by an operator at time of instantiation.
-
-2. Register the `Components`.
-
-    ```
-    kubectl apply -f tracker-managed-db-component.yaml
-    kubectl apply -f tracker-data-component.yaml
-    kubectl apply -f tracker-flights-component.yaml
-    kubectl apply -f tracker-quakes-component.yaml
-    kubectl apply -f tracker-weather-component.yaml
-    kubectl apply -f tracker-ui-component.yaml
-    ```
-
-*Note: if you prefer to run the Postgres database in-cluster using a
-`ContainerizedWorkload`, register the `tracker-db-component.yaml` instead of the
-`tracker-managed-db-component.yaml`.*
-
-### Application Operator: Instantiate application with appropriate configuration
-
-The application operator (this may or may not be different than the developer)
-tasks involve running the application with appropriate configurations.
-
-1. This **OAM ApplicationConfiguration** instantiates each of the components and
-   allows the operator to tune the following when running the components:
-
-    * Number of replicas for each component
-    * Values for any parameters that can be overridden in the components.
-
-2. Install the `ApplicationConfiguration`.
-
-    ```
-    kubectl create -f ApplicationConfiguration/tracker-app-config-managed.yaml
-    ```
-
-*Note: if you prefer to run the Postgres database in-cluster, install the
-`track-app-config.yaml` `ApplicationConfiguration` instead of
-`tracker-app-config-managed.yaml`.*
-
-3. Fine the external IP of the UI microservice
-
-    If using the local OAM Crossplane addon:
-
-    ```
-    kubectl get svc web-ui -o=jsonpath={.status.loadBalancer.ingress[0].ip}
-    ```
-
-    If using the remote OAM Crossplane addon:
-
-    ```
-    kubectl get kubernetesapplicationresources web-ui-service -o=jsonpath={.status.remote.loadBalancer.ingress[0].ip}
-    ```
-
-4. Add the following to your `/etc/hosts` file so you can access the endpoint
-   using the host (servicetracker.oam.io).
-
-    ```
-    <web-ui-ip-address> servicetracker.oam.io
-    ```
-
-5. Visit your browser and type in `servicetracker.oam.io` for the Service
-   Tracker website. Refresh the data on the dashboard for each of the
-   microservices.
-
-![Dashboard picture](dashboard.png)
-
-6. Once the data is refreshed, hitting the **Flights**, **Earthquakes** or
-   **Weather** tabs on the left, will provide up-to-date information.
-
-![flights picture](flights.png)
