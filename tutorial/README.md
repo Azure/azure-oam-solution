@@ -13,14 +13,7 @@ The application being deployed is shown in the following diagram:
 
 Complete the getting started section [here](../README.md#getting-started). 
 
-After completing the getting started section you should have two terminal windows open:
-
-- A terminal connected via `ssh` to a "control plane" Azure VM running minikube
-- A terminal on your local machine where you can use `kubectl` to communicate with an AKS cluster
-
-The control plane VM is where you will perform commands to deploy and manage application using OAM.
-
-The AKS cluster is where the application containers will run, and the actual application will be hosted.
+After completing the getting started section you should be connected to an AKS cluster. You will use `kubectl` with this cluster to deploy applications with OAM.
 
 ### Clone this repository
 
@@ -134,34 +127,26 @@ Applying an `ApplicationConfiguration` as well as all of the `Component` definit
 
 ---
 
-Now it's time to deploy this example. Make sure you have an active terminal for both the control plane VM (running minikube) and the AKS cluster. You will use the control plane VM to deploy manifests and the applications will run in the AKS cluster.
-
-Your control plane virtual machine wil already have `azoam` and `kubectl` on the path so they can be run. 
-
-Using the control plane vm:
+Now it's time to deploy this example. You should already have `azoam` and `kubectl` so they can be run. If you copied `azoam` to the local directory instead of to your path you will need to prefix it with the current directory like `./azoam`.
 
 ```sh
-# you should be logged in to the control plane VM as 'azureuser'
-whoami
-
 # this command will print information about the configured kubernetes cluster
-# minikube should be running - use `minikube start` if it is not
 kubectl cluster-info
 
 # deploy the application
 azoam hello-world/* | kubectl apply -f -
 ```
 
-You should see output like the following, this means that the Kubernetes objects were created in the control plane.
+You should see output like the following, this means that the Kubernetes objects were created.
 
 ```txt
 applicationconfiguration.core.oam.dev/hello-world created
 component.core.oam.dev/hello-world created
 ```
 
-> :bulb: What's actually happening in this example is that `azoam` is translating the ARM-DSL definitions into Kubernetes style YAML definitions and applying them to the local minikube cluster. If you want to see what it looks like you can use `azoam hello-world/*` and see the YAML that's output. Right now the OAM control plane is running inside the AKS cluster.
+> :bulb: What's actually happening in this example is that `azoam` is translating the ARM-DSL definitions into Kubernetes style YAML definitions and applying them. If you want to see what it looks like you can use `azoam hello-world/*` and see the YAML that's output.
 
-As a next step - verify that the control plane has successfully deployed the application to AKS:
+As a next step - verify that application has been successfully deployed:
 
 ```sh
 kubectl describe applicationconfiguration
@@ -220,7 +205,6 @@ Now paste the IP address into your browser (your IP address will be different fr
 If this is working then you've successfully completed this step. You can now remove this application and move on the next step.
 
 ```sh
-# using the control plane VM
 azoam hello-world/* | kubectl delete -f -
 ```
 
@@ -651,12 +635,9 @@ When you're satisfied, add it to the `ApplicationConfiguration`. Use the followi
 
 You may want to take a minute to check your work against the solution in `./flight-tracker-solution`.
 
-If you're satisfied go ahead and deploy - remember to use the terminal that you used to connect to the control plane VM.
+If you're satisfied go ahead and deploy.
 
 ```sh
-# you should be logged in as 'azureuser' in the control plane VM
-whoami
-
 # substitute the path to where your files are in this comment
 azoam ./flight-tracker/* | kubectl apply -f -
 ```
@@ -676,7 +657,6 @@ component.core.oam.dev/weather created
 Next check that the `ApplicationConfiguration` was deployed without errors by running:
 
 ```sh
-# run on the control plane VM
 kubectl describe applicationconfiguration
 ```
 
@@ -688,10 +668,9 @@ You should see a line like the following indicating success:
   Normal  RenderedComponents  4m44s (x125 over 125m)  oam/applicationconfiguration.core.oam.dev  Successfully rendered components
 ```
 
-Next, switch to your local terminal connected to the AKS cluster - we should be able to see all of the application's pods running:
+Now should be able to see all of the application's pods running:
 
 ```sh
-# run on your local terminal
 kubectl get pods
 ```
 
@@ -710,7 +689,6 @@ You may see the `data-api` pod in a crash loop. This can happen if the database 
 To try out the application we'll port-forward it to a local port.
 
 ```sh
-# run on your local terminal
 kubectl port-forward svc/ui 8080:8080
 ```
 
@@ -722,23 +700,20 @@ You may see data retrieval fail the first time you open the application. Usually
 
 ### Cleaning up
 
-If you get this far then the application has been successfully deployed. You can use the following command from your control plane VM to remove the application.
+If you get this far then the application has been successfully deployed.
 
 ```sh
-# you should be logged in as 'azureuser' in the control plane VM
-whoami
-
 # substitute the path to where your files are in this comment
 azoam ./flight-tracker/* | kubectl delete -f -
 ```
 
-You can continue by cleaning up the resource group that was created to delete all of the cloud resources. See instructions [here](../README.md#cleaning-up)
+You can continue by cleaning up the resource group that was created to delete all of the cloud resources and the service principal. See instructions [here](../README.md#cleaning-up)
 
 ## Troubleshooting
 
 Remember that you can find the completed sample in `./flight-tracker-solution` for reference if you want to check your answers.
 
-The best way see errors is using the control plane VM. Usually if you make a mistake (omitting a required property, or setting an invalid value) then the application will fail to deploy on the AKS cluster.
+Usually if you make a mistake (omitting a required property, or setting an invalid value) then the application will fail to deploy on the AKS cluster.
 
 You can see this using:
 
@@ -774,7 +749,7 @@ cannot apply workload "": cannot get object: resource name may not be empty
 If you need to fix a mistake the best way to do it is to clear out all of the resources and then apply them again with the correct versions.
 
 ```sh
-# using the control plane VM
+# delete deployed application
 azoam flight-tracker/* | kubectl delete -f -
 
 # after fixing the mistake

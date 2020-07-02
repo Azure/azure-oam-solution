@@ -1,10 +1,34 @@
 # Azure OAM Deployment
 
-This reposititory contains instructions and scripts for easily getting an OAM-enabled Kubernetes control plane running on Azure using Crossplane.
+This reposititory contains instructions and scripts for easily getting an OAM-enabled Kubernetes cluster running on Azure using Crossplane.
 
 ## Getting Started
 
 ### Prerequisites
+
+The tutorial uses commands that assume an Posix-like shell environment. 
+
+- Linux
+- macOS
+- Windows with WSL
+
+#### Install azoam CLI
+
+You can download the azoam CLI from this repository. Feel free to install to your path or run from the local directory depending on your preferences.
+
+**Linux / Windows with WSL**
+
+```sh
+curl -O https://github.com/Azure/azure-oam-solution/raw/master/tools/linux_amd64/azoam
+chmod +x ./azoam
+```
+
+**macOS**
+
+```sh
+curl -O https://github.com/Azure/azure-oam-solution/raw/master/tools/macos_amd64/azoam
+chmod +x ./azoam
+```
 
 #### Install Azure CLI
 
@@ -14,17 +38,18 @@ These instructions use the [Azure CLI](https://docs.microsoft.com/en-us/cli/azur
 
 [Install jq](https://stedolan.github.io/jq/download/) to process JSON output.
 
-#### Service Principal
+#### Install kubectl
 
-Crossplane needs a Service Principal so that it can manage resources for you.
+These instructions use [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) to deploy to Kubernetes.
 
-You can use the script provided at `scripts/create-service-principal.sh` (requires `jq`) OR follow the instructions [here](https://crossplane.io/docs/v0.11/getting-started/install-configure.html) for `Select Provider -> Azure -> Get Azure Principal Keyfile`. You do not install or configure anything other than the service principal now, just make sure to create `creds.json` and run all of the listed commands to grant permissions.
+#### Create Service Principal
 
 ```sh
 # log in to azure (if not logged in)
 az login
 
-wget -q https://raw.githubusercontent.com/Azure/azure-oam-solution/master/scripts/create-service-principal.sh -O - | /bin/bash
+# create service principal permissions limited to this subscription
+az ad sp create-for-rbac --sdk-auth --role Contributor > "creds.json"
 ```
 
 Verify the credential's file is present:
@@ -33,8 +58,6 @@ ls creds.json
 ```
 
 #### Resource Group
-
-This walkthrough will provide a resource group to Crossplane, where it will place provisioned resources.
 
 Choose a name for the resource group:
 ```sh
@@ -102,20 +125,16 @@ Make a note of the resource group name you choose for reference later.
 
 ### Apply ARM template
 
-Run (or customize) the following command to deploy the OAM control plane.
+Run the following command to deploy a Kubernetes cluster with support for OAM.
 
-**Bash/Zsh**:
 ```sh
 az deployment group create \
-  --template-uri https://raw.githubusercontent.com/Azure/azure-oam-solution/master/template.json \
-  --resource-group $OAM_TUTORIAL_RESOURCE_GROUP_NAME  \
-  --parameter "adminPasswordOrKey=$(<~/.ssh/id_rsa.pub)" \
-  --parameter "servicePrincipal=$(<creds.json)"
+  --template-file template.json \
+  --resource-group rynowak-testing \
+  --parameter "sshRSAPublicKey=$(<~/.ssh/id_rsa.pub)" \
+  --parameter "servicePrincipalClientId=$(<creds.json | jq '.clientId' --raw-output)" \
+  --parameter "servicePrincipalClientSecret=$(<creds.json | jq '.clientSecret' --raw-output)"
 ```
-
-The ARM template in this repo is based on the ARM template found [here](https://azure.microsoft.com/en-us/resources/templates/101-vm-simple-linux/). This documentation covers the supported parameters.
-
-The `adminPasswordOrKey` parameter in this example command uses an existing SSH public key in `~/.ssh/id_rsa.pub`.
 
 ### Find the created AKS cluster
 
@@ -134,41 +153,26 @@ export OAM_TUTORIAL_AKS_CLUSTER_NAME=$(az aks list --resource-group $OAM_TUTORIA
 ```sh
 az aks get-credentials --name $OAM_TUTORIAL_AKS_CLUSTER_NAME --resource-group $OAM_TUTORIAL_RESOURCE_GROUP_NAME
 ```
-Now you should have credentials in your Kubernetes configuration for the AKS cluster. Your workloads will be deployed in this Kubernetes cluster.
-
-### Connect to the control plane VM
-
-Extract the VM's *public* IP address:
-```
-export OAM_TUTORIAL_VM_IP=$(az vm list-ip-addresses -g $OAM_TUTORIAL_RESOURCE_GROUP_NAME --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" --output tsv)
-```
-
-The created VM IP address should be part of the command output.
-
-```sh
-ssh azureuser@$OAM_TUTORIAL_VM_IP
-```
-
-The OAM control plane is running in Minikube on the VM that you just logged into. Minikube will be stopped when you first log in.
-
-```sh
-minikube start
-```
-
-Now you can use `kubectl` to deploy some workloads using OAM.
+Now you should have credentials in your Kubernetes configuration for the AKS cluster. Now you can use `kubectl` to deploy some workloads using OAM.
 
 ## Complete the tutorial
 
-Once you can log into the control plane VM and access the AKS cluster you're ready to go!
+Once you can access the AKS cluster you're ready to go!
 
 Find the tutorial [here](tutorial/README.md).
 
 ## Cleaning Up
 
-All of the resources created by Crossplane, your control plane VM, and AKS cluster are all part of the same resource group. To delete all of the resources run the following command.
+All of the resources created by this tutorial are all part of the same resource group. To delete all of the resources run the following command.
 
 ```sh
 az group delete --name  $OAM_TUTORIAL_RESOURCE_GROUP_NAME --yes
+```
+
+Run the following to delete the service principal.
+
+```sh
+az ad sp delete --id "$(<creds.json | jq '.clientId' | xargs -I CLIENTID az ad sp list --filter \"appId eq 'CLIENTID'\" --query '[0].servicePrincipalNames[0]' -o tsv)"
 ```
 
 ## Contributing
