@@ -1,0 +1,100 @@
+variable dbuser 'myuser'
+variable dbpassword 'mypassword'
+variable dbname 'hackfest'
+variable datauri 'http://data-api:3009/'
+
+resource oam 'ApplicationConfiguration@core.oam.dev/v1alpha2' _ {
+  metadata: {
+    name: 'flight-tracker'
+  }
+  spec : {
+    components: [
+      {
+        componentName: 'db'
+        parameterValues: [
+          {
+            name: 'dbuser'
+            value: dbuser
+          }
+          {
+            name: 'dbpassword'
+            value: dbpassword
+          }
+          {
+            name: 'dbname'
+            value: dbname
+          }
+        ]
+      }
+      {
+        componentName: 'data-api'
+        parameterValues: [
+          {
+            name: 'dbuser'
+            value: dbuser
+          }
+          {
+            name: 'dbpassword'
+            value: dbpassword
+          }
+          {
+            name: 'dbname'
+            value: dbname
+          }
+          {
+            name: 'dbhostname'
+            value: 'db'
+          }
+          {
+            name: 'dbport'
+            value: '5432'
+          }
+        ]
+      }
+      {
+        componentName: 'flights'
+        parameterValues: [
+          {
+            name: 'datauri'
+            value: datauri
+          }
+        ]
+      }
+      {
+        componentName: 'quakes'
+        parameterValues: [
+          {
+            name: 'datauri'
+            value: datauri
+          }
+        ]
+      }
+      {
+        componentName: 'weather'
+        parameterValues: [
+          {
+            name: 'datauri'
+            value: datauri
+          }
+        ]
+      }
+      {
+        componentName: 'ui'
+        parameterValues: [
+          {
+            name: 'flightsuri'
+            value: 'http://flights:3003/'
+          }
+          {
+            name: 'quakesuri'
+            value: 'http://quakes:3012/'
+          }
+          {
+            name: 'weatheruri'
+            value: 'http://weather:3015/'
+          }
+        ]
+      }
+    ]
+  }
+}

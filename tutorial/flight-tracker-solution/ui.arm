@@ -1,0 +1,49 @@
+input string flightsuri
+input string quakesuri
+input string weatheruri
+
+resource oam 'Component@core.oam.dev/v1alpha2' _ {
+  metadata: {
+    name: 'ui'
+  }
+  spec : {
+    workload: {
+      apiVersion: 'core.oam.dev/v1alpha2'
+      kind: 'ContainerizedWorkload'
+      metadata: {
+        name: 'ui'
+      }
+      spec: {
+        osType: 'linux'
+        arch: 'amd64'
+        containers: [
+          {
+            name: 'ui'
+            image: 'sonofjorel/rudr-web-ui:0.49'
+            env: [
+              {
+                name: 'FLIGHT_API_ROOT'
+                value: flightsuri
+              }
+              {
+                name: 'QUAKES_API_ROOT'
+                value: quakesuri
+              }
+              {
+                name: 'WEATHER_API_ROOT'
+                value: weatheruri
+              }
+            ]
+            ports: [
+              {
+                name: 'http'
+                containerPort: 8080
+                protocol: 'TCP'
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

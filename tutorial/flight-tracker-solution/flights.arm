@@ -1,0 +1,39 @@
+input string datauri
+
+resource oam 'Component@core.oam.dev/v1alpha2' _ {
+  metadata: {
+    name: 'flights'
+  }
+  spec : {
+    workload: {
+      apiVersion: 'core.oam.dev/v1alpha2'
+      kind: 'ContainerizedWorkload'
+      metadata: {
+        name: 'flights'
+      }
+      spec: {
+        osType: 'linux'
+        arch: 'amd64'
+        containers: [
+          {
+            name: 'flights'
+            image: 'sonofjorel/rudr-flights-api:0.49'
+            env: [
+              {
+                name: 'DATA_SERVICE_URI'
+                value: datauri
+              }
+            ]
+            ports: [
+              {
+                name: 'http'
+                containerPort: 3003
+                protocol: 'TCP'
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
