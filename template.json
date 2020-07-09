@@ -4,7 +4,7 @@
     "parameters": {
         "clusterName": {
             "type": "string",
-            "defaultValue": "[uniqueString('oam-aks-cluster')]",
+            "defaultValue": "[concat('oam-aks-', uniqueString(resourceGroup().id))]",
             "metadata": {
                 "description": "The name of the Managed Cluster resource."
             }
@@ -18,7 +18,7 @@
         },
         "kubernetesVersion": {
             "type": "string",
-            "defaultValue": "1.16.9",
+            "defaultValue": "1.16.10",
             "metadata": {
                 "description": "The version of Kubernetes to use."
             }
@@ -88,7 +88,7 @@
         },
         "identityName": {
             "type": "string",
-            "defaultValue": "[uniqueString('oam-identity')]",
+            "defaultValue": "[concat('oam-id-', uniqueString(resourceGroup().id))]",
             "metadata": {
                 "description": "The identity name to use for the deployment script."
             }

@@ -129,8 +129,8 @@ Run the following command to deploy a Kubernetes cluster with support for OAM.
 
 ```sh
 az deployment group create \
-  --template-file template.json \
-  --resource-group rynowak-testing \
+  --template-uri https://raw.githubusercontent.com/Azure/azure-oam-solution/master/template.json \
+  --resource-group $OAM_TUTORIAL_RESOURCE_GROUP_NAME \
   --parameter "sshRSAPublicKey=$(<~/.ssh/id_rsa.pub)" \
   --parameter "servicePrincipalClientId=$(<creds.json | jq '.clientId' --raw-output)" \
   --parameter "servicePrincipalClientSecret=$(<creds.json | jq '.clientSecret' --raw-output)"
