@@ -1,299 +1,197 @@
 {
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-    "contentVersion": "1.0.0.0",
+    "contentVersion": "1.0.0.1",
     "parameters": {
-        "vmName": {
+        "clusterName": {
             "type": "string",
-            "defaultValue": "[toLower(concat('oam-vm-', uniqueString(resourceGroup().id)))]",
+            "defaultValue": "[concat('oam-aks-', uniqueString(resourceGroup().id))]",
             "metadata": {
-                "description": "The name of you Virtual Machine."
-            }
-        },
-        "adminUsername": {
-            "type": "string",
-            "defaultValue": "azureuser",
-            "metadata": {
-                "description": "Username for the Virtual Machine."
-            }
-        },
-        "authenticationType": {
-            "type": "string",
-            "defaultValue": "sshPublicKey",
-            "allowedValues": [
-                "sshPublicKey",
-                "password"
-            ],
-            "metadata": {
-                "description": "Type of authentication to use on the Virtual Machine. SSH key is recommended."
-            }
-        },
-        "adminPasswordOrKey": {
-            "type": "securestring",
-            "metadata": {
-                "description": "SSH Key or password for the Virtual Machine. SSH key is recommended."
-            }
-        },
-        "servicePrincipal": {
-            "type": "securestring",
-            "metadata": {
-                "description": "JSON blob describing an Azure service principal. Will be used to manage resources created by OAM."
-            }
-        },
-        "dnsLabelPrefix": {
-            "type": "string",
-            "defaultValue": "[toLower(concat('oam-vm-', uniqueString(resourceGroup().id)))]",
-            "metadata": {
-                "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
-            }
-        },
-        "ubuntuOSVersion": {
-            "type": "string",
-            "defaultValue": "18.04-LTS",
-            "allowedValues": [
-                "16.04.0-LTS",
-                "18.04-LTS"
-            ],
-            "metadata": {
-                "description": "The Ubuntu version for the VM. This will pick a fully patched image of this given Ubuntu version."
+                "description": "The name of the Managed Cluster resource."
             }
         },
         "location": {
             "type": "string",
             "defaultValue": "[resourceGroup().location]",
             "metadata": {
-                "description": "Location for all resources."
+                "description": "The location of the Managed Cluster resource."
             }
         },
-        "VmSize": {
+        "kubernetesVersion": {
             "type": "string",
-            "defaultValue": "Standard_D4s_v3",
+            "defaultValue": "1.16.10",
+            "metadata": {
+                "description": "The version of Kubernetes to use."
+            }
+        },
+        "osDiskSizeGB": {
+            "type": "int",
+            "defaultValue": 0,
+            "metadata": {
+                "description": "Disk size (in GB) to provision for each of the agent pool nodes. This value ranges from 0 to 1023. Specifying 0 will apply the default disk size for that agentVMSize."
+            },
+            "minValue": 0,
+            "maxValue": 1023
+        },
+        "agentCount": {
+            "type": "int",
+            "defaultValue": 3,
+            "metadata": {
+                "description": "The number of nodes for the cluster."
+            },
+            "minValue": 1,
+            "maxValue": 50
+        },
+        "agentVMSize": {
+            "type": "string",
+            "defaultValue": "Standard_DS2_v2",
+            "metadata": {
+                "description": "The size of the Virtual Machine."
+            }
+        },
+        "linuxAdminUsername": {
+            "type": "string",
+            "defaultValue": "azureuser",
+            "metadata": {
+                "description": "User name for the Linux Virtual Machines."
+            }
+        },
+        "sshRSAPublicKey": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Configure all linux machines with the SSH RSA public key string. Your key should include three parts, for example 'ssh-rsa AAAAB...snip...UcyupgH azureuser@linuxvm'"
+            }
+        },
+        "servicePrincipalClientId": {
+            "defaultValue": "",
+            "metadata": {
+                "description": "Client ID (used by cloudprovider)"
+            },
+            "type": "securestring"
+        },
+        "servicePrincipalClientSecret": {
+            "defaultValue": "",
+            "metadata": {
+                "description": "The Service Principal Client Secret."
+            },
+            "type": "securestring"
+        },
+        "osType": {
+            "type": "string",
+            "defaultValue": "Linux",
             "allowedValues": [
-                "Standard_D4s_v3",
-                "Standard_D8s_v3"
+                "Linux"
             ],
             "metadata": {
-                "description": "The size of the VM"
+                "description": "The type of operating system."
             }
         },
-        "virtualNetworkName": {
+        "identityName": {
             "type": "string",
-            "defaultValue": "vNet",
+            "defaultValue": "[concat('oam-id-', uniqueString(resourceGroup().id))]",
             "metadata": {
-                "description": "Name of the VNET"
+                "description": "The identity name to use for the deployment script."
             }
         },
-        "subnetName": {
+        "_scriptUri": {
             "type": "string",
-            "defaultValue": "Subnet",
+            "defaultValue": "https://raw.githubusercontent.com/azure/azure-oam-solution/master/scripts/install-oam-local.sh",
             "metadata": {
-                "description": "Name of the subnet in the virtual network"
-            }
-        },
-        "networkSecurityGroupName": {
-            "type": "string",
-            "defaultValue": "SecGroupNet",
-            "metadata": {
-                "description": "Name of the Network Security Group"
-            }
-        },
-        "_artifactsLocation": {
-            "defaultValue": "https://raw.githubusercontent.com/azure/azure-oam-solution/master/",
-            "type": "string",
-            "metadata": {
-                "description": "The base URI where artifacts required by this template are located. When the template is deployed using the accompanying scripts, a private location in the subscription will be used and this value will be automatically generated."
+                "description": "URI of the script to execute. Used for testing."
             }
         }
     },
     "variables": {
-        "publicIpAddressName": "[concat(parameters('vmName'), 'PublicIP' )]",
-        "networkInterfaceName": "[concat(parameters('vmName'),'NetInt')]",
-        "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), parameters('subnetName'))]",
-        "osDiskType": "Standard_LRS",
-        "subnetAddressPrefix": "10.1.0.0/24",
-        "addressPrefix": "10.1.0.0/16",
-        "linuxConfiguration": {
-            "disablePasswordAuthentication": true,
-            "ssh": {
-                "publicKeys": [
-                    {
-                        "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
-                        "keyData": "[parameters('adminPasswordOrKey')]"
-                    }
-                ]
-            }
-        }
+        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+        "roleDefinitionName": "[guid(parameters('identityName'), variables('roleDefinitionId'))]"
     },
     "resources": [
         {
-            "type": "Microsoft.Network/networkInterfaces",
-            "apiVersion": "2018-10-01",
-            "name": "[variables('networkInterfaceName')]",
-            "location": "[parameters('location')]",
+            "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+            "name": "[parameters('identityName')]",
+            "apiVersion": "2018-11-30",
+            "location": "[resourceGroup().location]"
+        },
+        {
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2019-04-01-preview",
+            "name": "[variables('roleDefinitionName')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/networkSecurityGroups/', parameters('networkSecurityGroupName'))]",
-                "[resourceId('Microsoft.Network/virtualNetworks/', parameters('virtualNetworkName'))]",
-                "[resourceId('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName'))]"
+                "[parameters('identityName')]"
             ],
             "properties": {
-                "ipConfigurations": [
+                "roleDefinitionId": "[variables('roleDefinitionId')]",
+                "principalId": "[reference(parameters('identityName')).principalId]",
+                "scope": "[resourceGroup().id]",
+                "principalType": "ServicePrincipal"
+            }
+        },
+        {
+            "apiVersion": "2020-03-01",
+            "type": "Microsoft.ContainerService/managedClusters",
+            "location": "[parameters('location')]",
+            "name": "[parameters('clusterName')]",
+            "properties": {
+                "kubernetesVersion": "[parameters('kubernetesVersion')]",
+                "dnsPrefix": "[parameters('clusterName')]",
+                "agentPoolProfiles": [
                     {
-                        "name": "ipconfig1",
-                        "properties": {
-                            "subnet": {
-                                "id": "[variables('subnetRef')]"
-                            },
-                            "privateIPAllocationMethod": "Dynamic",
-                            "publicIpAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
-                            }
-                        }
+                        "name": "agentpool",
+                        "osDiskSizeGB": "[parameters('osDiskSizeGB')]",
+                        "count": "[parameters('agentCount')]",
+                        "vmSize": "[parameters('agentVMSize')]",
+                        "osType": "[parameters('osType')]",
+                        "storageProfile": "ManagedDisks"
                     }
                 ],
-                "networkSecurityGroup": {
-                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups',parameters('networkSecurityGroupName'))]"
+                "linuxProfile": {
+                    "adminUsername": "[parameters('linuxAdminUsername')]",
+                    "ssh": {
+                        "publicKeys": [
+                            {
+                                "keyData": "[parameters('sshRSAPublicKey')]"
+                            }
+                        ]
+                    }
+                },
+                "servicePrincipalProfile": {
+                    "clientId": "[parameters('servicePrincipalClientId')]",
+                    "Secret": "[parameters('servicePrincipalClientSecret')]"
                 }
             }
         },
         {
-            "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "2019-02-01",
-            "name": "[parameters('networkSecurityGroupName')]",
-            "location": "[parameters('location')]",
-            "properties": {
-                "securityRules": [
-                    {
-                        "name": "SSH",
-                        "properties": {
-                            "priority": 1000,
-                            "protocol": "Tcp",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "sourceAddressPrefix": "*",
-                            "sourcePortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "destinationPortRange": "22"
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            "type": "Microsoft.Network/virtualNetworks",
-            "apiVersion": "2019-04-01",
-            "name": "[parameters('virtualNetworkName')]",
-            "location": "[parameters('location')]",
-            "properties": {
-                "addressSpace": {
-                    "addressPrefixes": [
-                        "[variables('addressPrefix')]"
-                    ]
-                },
-                "subnets": [
-                    {
-                        "name": "[parameters('subnetName')]",
-                        "properties": {
-                            "addressPrefix": "[variables('subnetAddressPrefix')]",
-                            "privateEndpointNetworkPolicies": "Enabled",
-                            "privateLinkServiceNetworkPolicies": "Enabled"
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            "type": "Microsoft.Network/publicIPAddresses",
-            "apiVersion": "2019-02-01",
-            "name": "[variables('publicIpAddressName')]",
-            "location": "[parameters('location')]",
-            "properties": {
-                "publicIPAllocationMethod": "Dynamic",
-                "publicIPAddressVersion": "IPv4",
-                "dnsSettings": {
-                    "domainNameLabel": "[parameters('dnsLabelPrefix')]"
-                },
-                "idleTimeoutInMinutes": 4
+            "type": "Microsoft.Resources/deploymentScripts",
+            "apiVersion": "2019-10-01-preview",
+            "name": "deploy-oam",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ContainerService/managedClusters', parameters('clusterName'))]",
+                "[resourceId('Microsoft.Authorization/roleAssignments', variables('roleDefinitionName'))]"
+            ],
+            "kind": "AzureCLI",
+            "identity": {
+                "type": "userAssigned",
+                "userAssignedIdentities": {
+                    "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName'))]": {}
+                }
             },
-            "sku": {
-                "name": "Basic",
-                "tier": "Regional"
-            }
-        },
-        {
-            "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "2019-03-01",
-            "name": "[parameters('vmName')]",
-            "location": "[parameters('location')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Network/networkInterfaces/', variables('networkInterfaceName'))]"
-            ],
             "properties": {
-                "hardwareProfile": {
-                    "vmSize": "[parameters('VmSize')]"
-                },
-                "storageProfile": {
-                    "osDisk": {
-                        "createOption": "FromImage",
-                        "managedDisk": {
-                            "storageAccountType": "[variables('osDiskType')]"
-                        }
-                    },
-                    "imageReference": {
-                        "publisher": "Canonical",
-                        "offer": "UbuntuServer",
-                        "sku": "[parameters('ubuntuOSVersion')]",
-                        "version": "latest"
-                    }
-                },
-                "networkProfile": {
-                    "networkInterfaces": [
-                        {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
-                        }
-                    ]
-                },
-                "osProfile": {
-                    "computerName": "[parameters('vmName')]",
-                    "adminUsername": "[parameters('adminUsername')]",
-                    "adminPassword": "[parameters('adminPasswordOrKey')]",
-                    "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), json('null'), variables('linuxConfiguration'))]"
-                }
-            }
-        },
-        {
-            "type": "Microsoft.Compute/virtualMachines/extensions",
-            "name": "[concat(parameters('vmName'), '/installcustomscript')]",
-            "apiVersion": "2015-05-01-preview",
-            "location": "[parameters('location')]",
-            "dependsOn": [
-                "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
-            ],
-            "properties": {
-                "publisher": "Microsoft.Azure.Extensions",
-                "type": "CustomScript",
-                "typeHandlerVersion": "2.1",
-                "autoUpgradeMinorVersion": true,
-                "settings": {},
-                "protectedSettings": {
-                    "fileUris": [
-                        "[concat(parameters('_artifactsLocation'), 'scripts/install-oam-remote.sh')]"
-                    ],
-                    "commandToExecute": "[concat('chmod ugo+rwx install-oam-remote.sh && cp install-oam-remote.sh /home/', parameters('adminUsername'), '/install-oam-remote.sh && cd /home/', parameters('adminUsername'), '/ && sudo -u ', parameters('adminUsername'), ' bash ./install-oam-remote.sh \"', resourceGroup().name, '\" \"', parameters('location'), '\" \"', replace(base64(parameters('servicePrincipal')), '\n', ''), '\"')]"
-                }
+                "forceUpdateTag": 1,
+                "azCliVersion": "2.0.80",
+                "arguments": "[concat('\"', resourceGroup().name, '\" \"', parameters('clusterName'), '\"')]",
+                "primaryScriptUri": "[parameters('_scriptUri')]",
+                "supportingScriptUris": [],
+                "timeout": "PT30M",
+                "cleanupPreference": "OnSuccess",
+                "retentionInterval": "P1D"
             }
         }
     ],
     "outputs": {
-        "adminUsername": {
+        "controlPlaneFQDN": {
             "type": "string",
-            "value": "[parameters('adminUsername')]"
-        },
-        "hostname": {
-            "type": "string",
-            "value": "[reference(variables('publicIPAddressName')).dnsSettings.fqdn]"
-        },
-        "sshCommand": {
-            "type": "string",
-            "value": "[concat('ssh ', parameters('adminUsername'), '@', reference(variables('publicIPAddressName')).dnsSettings.fqdn)]"
+            "value": "[reference(parameters('clusterName')).fqdn]"
         }
     }
 }
