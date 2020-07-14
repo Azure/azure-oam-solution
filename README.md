@@ -132,8 +132,8 @@ az deployment group create \
   --template-uri https://raw.githubusercontent.com/Azure/azure-oam-solution/master/template.json \
   --resource-group $OAM_TUTORIAL_RESOURCE_GROUP_NAME \
   --parameter "sshRSAPublicKey=$(cat ~/.ssh/id_rsa.pub)" \
-  --parameter "servicePrincipalClientId=$(jq '.clientId' --raw-output) creds.json" \
-  --parameter "servicePrincipalClientSecret=$(jq '.clientSecret' --raw-output) creds.json"
+  --parameter "servicePrincipalClientId=$(jq '.clientId' --raw-output creds.json)" \
+  --parameter "servicePrincipalClientSecret=$(jq '.clientSecret' --raw-output creds.json)"
 ```
 
 ### Find the created AKS cluster
