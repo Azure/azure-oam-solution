@@ -19,14 +19,14 @@ You can download the azoam CLI from this repository. Feel free to install to you
 **Linux / Windows with WSL**
 
 ```sh
-curl -O https://github.com/Azure/azure-oam-solution/raw/master/tools/linux_amd64/azoam
+curl -O https://raw.githubusercontent.com/Azure/azure-oam-solution/master/tools/linux_amd64/azoam
 chmod +x ./azoam
 ```
 
 **macOS**
 
 ```sh
-curl -O https://github.com/Azure/azure-oam-solution/raw/master/tools/macos_amd64/azoam
+curl -O https://raw.githubusercontent.com/Azure/azure-oam-solution/master/tools/macos_amd64/azoam
 chmod +x ./azoam
 ```
 
