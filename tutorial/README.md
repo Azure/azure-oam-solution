@@ -20,10 +20,14 @@ After completing the getting started section you should be connected to an AKS c
 Clone this repository locally using whatever technique you prefer. Example:
 
 ```sh
-git clone git@github.com/azure/azure-oam-solution.git
+git clone git@github.com:Azure/azure-oam-solution.git
 ```
 
-This repository contains code you will use during the tutorial as well as a solution you can use to check your work. You might find it convenient to use the `./tutorial/flight-tracker` directory as your working directory for the bulk of the tutorial.
+### Prepare your PATH and go to the working directory
+```sh
+export PATH=$PATH:$PWD
+cd azure-oam-solution/tutorial
+```
 
 ## Deploying your first application
 
@@ -162,16 +166,9 @@ You'll see lots of output - with the final lines looking like:
 
 The last line indicates that the components have been deployed to the remote AKS cluster. If you make a mistake, for instance omitting a required property, it will be displayed here.
 
-Now you can use your other terminal (AKS cluster) to verify that the application was deployed:
+Now, verify that the application was deployed:
 
 ```sh
-# You should see your normal username here (not 'azureuser')
-whoami 
-
-# You should see a cluster ending with '.azmk8s.io'
-# This should be the AKS cluster created by the Getting Started instructions 
-kubectl cluster-info
-
 kubectl get pods
 ```
 
@@ -200,6 +197,11 @@ If the IP address is still in the pending state wait a few seconds and try again
 
 Now paste the IP address into your browser (your IP address will be different from the one shown here). After a few seconds you should see some basic info about the server.
 
+Optionally, use the helper command below to extract the site URL:
+```sh
+echo "http://$(kubectl get svc | grep hello-world | cut -d\  -f10)"
+```
+
 ![screenshot of the hello-world application](hello-world.png)
 
 If this is working then you've successfully completed this step. You can now remove this application and move on the next step.
@@ -226,7 +228,7 @@ You can also find the completed sample in `./flight-tracker-solution` for refere
 
 ### 1. Create an empty ApplicationConfiguration
 
-Create an `ApplicationConfiguration` declaration with the name `flight-tracker`. Remember that an `ApplicationConfiguration` should use the resource type `ApplicationConfiguration@core.oam.dev/v1alpha2`. Feel free to refer to the previous example `./hello-world/applicationconfiguration.arm` as a template.
+Create the `./flight-tracker.arm` file and open it with your favorite text editor. Now, add an `ApplicationConfiguration` declaration with the name `flight-tracker`. Remember that an `ApplicationConfiguration` should use the resource type `ApplicationConfiguration@core.oam.dev/v1alpha2`. Feel free to refer to the previous example `./hello-world/applicationconfiguration.arm` as a template.
 
 For now the `spec.components` node should be an empty array.
 
